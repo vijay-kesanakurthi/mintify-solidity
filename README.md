@@ -31,4 +31,4 @@ This Solidity smart contract, named Mintify, implements an ERC721 token with min
 
 To use this smart contract, you will need to deploy it on the Ethereum network using a compatible development environment such as Remix or Truffle. Once deployed, you can interact with the contract using its functions.
 
-Here is the sample deployement addresss in sapolia testnet: [0xeC10B858B78BdF4E8c3609e9360e7e9f63387736](https://sepolia.etherscan.io/address/0xec10b858b78bdf4e8c3609e9360e7e9f63387736)
+Here is the sample deployement addresss in sepolia testnet: [0xeC10B858B78BdF4E8c3609e9360e7e9f63387736](https://sepolia.etherscan.io/address/0xec10b858b78bdf4e8c3609e9360e7e9f63387736)
