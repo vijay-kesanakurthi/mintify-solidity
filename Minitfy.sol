@@ -13,9 +13,9 @@ import "@openzeppelin/contracts@4.4.0/access/Ownable.sol";
  */
 contract Mintify is ERC721, Ownable {
     // State variables
-    uint256 public totalMints = 0;
+    uint256 private totalMints;
     uint256 public mintPrice = 10000 wei;
-    uint public whitelistPrice = 50000 wei;
+    uint256 public whitelistPrice = 50000 wei;
     uint256 public maxSupply = 10;
     uint256 public maxPerWallet = 2;
 
@@ -35,16 +35,13 @@ contract Mintify is ERC721, Ownable {
         string memory _symbol,
         string memory _initBaseURI
     ) ERC721(_name, _symbol) {
-        require(
-            bytes(_name).length > 0 && bytes(_name).length <= 50,
-            "Invalid name length"
-        );
-        require(
-            bytes(_symbol).length > 0 && bytes(_symbol).length <= 10,
-            "Invalid symbol length"
-        );
+        // Require non-empty name
+        require(bytes(_name).length > 0 && bytes(_name).length <= 50, "Invalid name length");
+        // Require non-empty symbol
+        require(bytes(_symbol).length > 0 && bytes(_symbol).length <= 10, "Invalid symbol length");
+        // Require non-empty base URI
         require(bytes(_initBaseURI).length > 0, "Invalid base URI");
-        setURI(_initBaseURI);
+        baseURI = _initBaseURI;
     }
 
     /**
@@ -60,9 +57,12 @@ contract Mintify is ERC721, Ownable {
      * @param to The address to mint the token to
      */
     function safeMint(address to) public onlyOwner {
+        // Require that total mints are less than max supply
         require(totalMints < maxSupply, "All NFTs are minted");
+        // Safely mint the token
         _safeMint(to, totalMints);
-        totalMints += 1;
+        // Increment total mints
+        totalMints++;
     }
 
     /**
@@ -70,26 +70,26 @@ contract Mintify is ERC721, Ownable {
      * @param _quantity The quantity of tokens to mint
      */
     function mintToken(uint256 _quantity) public payable {
+        // Require that quantity is greater than zero
         require(_quantity > 0, "Quantity must be greater than zero");
-        if (whitelisted[msg.sender] == true) {
-            require(
-                _quantity * whitelistPrice == msg.value,
-                "Wrong amount sent"
-            );
-        } else {
-            require(_quantity * mintPrice == msg.value, "Wrong amount sent");
-        }
-        require(
-            walletMints[msg.sender] + _quantity <= maxPerWallet,
-            "Mints per wallet exceeded"
-        );
-        require(_quantity + totalMints < maxSupply, "Insufficient NFTs");
+        // Require that the total mints after this transaction will be within max supply
+        require(_quantity + totalMints <= maxSupply, "Insufficient NFTs");
+        // Require that the wallet won't exceed the max per wallet limit
+        require(walletMints[msg.sender] + _quantity <= maxPerWallet, "Mints per wallet exceeded");
+        
+        // Calculate price
+        uint256 price = whitelisted[msg.sender] ? whitelistPrice : mintPrice;
+        // Require that the correct amount of Ether is sent
+        require(msg.value == _quantity * price, "Wrong amount sent");
 
+        // Update wallet mints
         walletMints[msg.sender] += _quantity;
+        // Mint tokens
         for (uint256 i = 0; i < _quantity; i++) {
-            _safeMint(msg.sender, totalMints);
-            totalMints += 1;
+            _safeMint(msg.sender, totalMints + i);
         }
+        // Increment total mints
+        totalMints += _quantity;
     }
 
     /**
@@ -121,6 +121,8 @@ contract Mintify is ERC721, Ownable {
      * @param _mintPrice The new mint price
      */
     function setMintPrice(uint256 _mintPrice) public onlyOwner {
+        // Require that the new mint price is greater than zero
+        require(_mintPrice > 0, "Price must be greater than zero");
         mintPrice = _mintPrice;
     }
 
@@ -129,6 +131,8 @@ contract Mintify is ERC721, Ownable {
      * @param _whitelistPrice The new whitelist price
      */
     function setWhitelistPrice(uint256 _whitelistPrice) public onlyOwner {
+        // Require that the new whitelist price is greater than zero
+        require(_whitelistPrice > 0, "Price must be greater than zero");
         whitelistPrice = _whitelistPrice;
     }
 
@@ -137,6 +141,8 @@ contract Mintify is ERC721, Ownable {
      * @param _maxSupply The new maximum supply
      */
     function setMaxSupply(uint256 _maxSupply) public onlyOwner {
+        // Require that the new max supply is greater than zero
+        require(_maxSupply > 0, "Max supply must be greater than zero");
         maxSupply = _maxSupply;
     }
 
@@ -145,6 +151,8 @@ contract Mintify is ERC721, Ownable {
      * @param _maxPerWallet The new maximum tokens per wallet
      */
     function setMaxPerWallet(uint256 _maxPerWallet) public onlyOwner {
+        // Require that the new max per wallet limit is greater than zero
+        require(_maxPerWallet > 0, "Max per wallet must be greater than zero");
         maxPerWallet = _maxPerWallet;
     }
 
@@ -152,7 +160,10 @@ contract Mintify is ERC721, Ownable {
      * @dev Allows the contract owner to withdraw the contract balance
      */
     function withdraw() external onlyOwner {
-        payable(msg.sender).transfer(address(this).balance);
+        // Require that the contract balance is greater than zero
+        require(address(this).balance > 0, "Contract balance is zero");
+        // Transfer contract balance to owner
+        payable(owner()).transfer(address(this).balance);
     }
 
     /**
